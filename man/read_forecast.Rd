@@ -6,9 +6,10 @@
 \usage{
 read_forecast(
   file_in,
-  target_variables = c("oxygen", "temperature", "richness", "abundance", "nee", "le",
-    "vswc", "gcc_90", "ixodes_scapularis", "amblyomma_americanum"),
+  target_variables = c("oxygen", "temperature", "chla", "richness", "abundance", "nee",
+    "le", "vswc", "gcc_90", "ixodes_scapularis", "amblyomma_americanum"),
   reps_col = "ensemble",
+  quiet = TRUE,
   ...
 )
 }
@@ -18,6 +19,8 @@ read_forecast(
 \item{target_variables}{vector of valid variables being predicted}
 
 \item{reps_col}{name of the replicates column (for ensemble forecasts)}
+
+\item{quiet}{logical, default TRUE (show download progress?)}
 
 \item{...}{additional options (currently ignored)
 Reads in a valid forecast as a data.frame() in EFI format.

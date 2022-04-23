@@ -4,6 +4,7 @@
 #' @param file_in path or URL to forecast to be read in
 #' @param target_variables vector of valid variables being predicted
 #' @param reps_col name of the replicates column (for ensemble forecasts)
+#' @param quiet logical, default TRUE (show download progress?)
 #' @param ... additional options (currently ignored)
 #' Reads in a valid forecast as a data.frame() in EFI format.
 #' csv files are simply read in using `readr::read_csv`.
@@ -14,6 +15,7 @@
 read_forecast <- function(file_in, 
                           target_variables = c("oxygen", 
                                                "temperature", 
+                                               "chla",
                                                "richness",
                                                "abundance", 
                                                "nee",
@@ -23,6 +25,7 @@ read_forecast <- function(file_in,
                                                "ixodes_scapularis",
                                                "amblyomma_americanum"),
                           reps_col = "ensemble",
+                          quiet = TRUE,
                           ...){
 
   if(any(vapply(c("[.]csv", "[.]csv\\.gz"), grepl, logical(1), file_in))){  
@@ -31,7 +34,7 @@ read_forecast <- function(file_in,
 
     
   } else if(grepl("[.]nc", file_in)){ #if file is nc
-    out <- read_forecast_nc(file_in, target_variables, reps_col)
+    out <- read_forecast_nc(file_in, target_variables, reps_col, quiet = quiet)
   }
   
   out
@@ -41,6 +44,7 @@ read_forecast <- function(file_in,
 read_forecast_nc <- function(file_in,
                              target_variables = c("oxygen", 
                                                   "temperature", 
+                                                  "chla",
                                                   "richness",
                                                   "abundance", 
                                                   "nee",
@@ -49,13 +53,14 @@ read_forecast_nc <- function(file_in,
                                                   "gcc_90",
                                                   "ixodes_scapularis",
                                                   "amblyomma_americanum"),
-                             reps_col = "ensemble")
+                             reps_col = "ensemble",
+                             quiet = TRUE)
 {
   
   if(!file.exists(file_in)) {
     ## If URL is passed instead
     path <- tempfile(basename(file_in), fileext = tools::file_ext(file_in))
-    utils::download.file(file_in, path)
+    utils::download.file(file_in, path, quiet = quiet)
     on.exit(unlink(path))
     file_in <- path
   }
