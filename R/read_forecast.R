@@ -56,6 +56,7 @@ read_forecast_nc <- function(file_in,
     ## If URL is passed instead
     path <- tempfile(basename(file_in), fileext = tools::file_ext(file_in))
     utils::download.file(file_in, path)
+    on.exit(unlink(path))
     file_in <- path
   }
   
