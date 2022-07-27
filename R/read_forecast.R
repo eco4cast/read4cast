@@ -40,9 +40,7 @@ read_forecast <- function(file_in,
     } else {
       out <- read_arrow(file_in, s3)
     }
-  }
-  
-  if(any(vapply(c("[.]csv", "[.]csv\\.gz"), grepl, logical(1), file_in))){  
+  } else if(any(vapply(c("[.]csv", "[.]csv\\.gz"), grepl, logical(1), file_in))){  
     # if file is csv zip file
     out <- readr::read_csv(file_in, guess_max = 1e6, lazy = FALSE, show_col_types = FALSE) 
 
