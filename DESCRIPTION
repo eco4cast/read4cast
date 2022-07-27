@@ -1,6 +1,6 @@
 Package: read4cast
 Title: Parsing Utilities for Forecast Competitions
-Version: 0.0.0.9000
+Version: 0.0.2
 Authors@R: c(person(
               "Carl", "Boettiger", 
               email = "cboettig@gmail.com", 
@@ -9,12 +9,15 @@ Authors@R: c(person(
             person("Quinn", "Thomas", role = "aut",
                    comment = c(ORCID = "0000-0003-1282-7825"))
             )
-Description: Helper utilities for reading forecasts.
+Description: Helper utilities for reading forecasts. Supports reading 
+    forecasts EFI standard csv and netcdf serializations.  Can also
+    read forecasts from S3 buckets directly.
 License: Apache License (>= 2)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.2
 Suggests: 
+    arrow,
     spelling,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
@@ -24,6 +27,4 @@ Imports:
     lubridate,
     ncdf4,
     readr,
-    tibble,
-    tidync,
-    tidyselect
+    tidync

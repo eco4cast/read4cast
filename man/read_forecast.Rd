@@ -10,6 +10,7 @@ read_forecast(
     "le", "vswc", "gcc_90", "ixodes_scapularis", "amblyomma_americanum"),
   reps_col = "ensemble",
   quiet = TRUE,
+  s3 = NULL,
   ...
 )
 }
@@ -21,6 +22,9 @@ read_forecast(
 \item{reps_col}{name of the replicates column (for ensemble forecasts)}
 
 \item{quiet}{logical, default TRUE (show download progress?)}
+
+\item{s3}{Optionally, provide an S3 bucket (from \code{arrow::s3_bucket}).
+In this case, \code{file_in} is interpreted as the object key on the bucket.}
 
 \item{...}{additional options (currently ignored)
 Reads in a valid forecast as a data.frame() in EFI format.

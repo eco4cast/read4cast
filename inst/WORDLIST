@@ -1,5 +1,7 @@
 CMD
 EFI
+FileSystem
+Filesystem
 csv
-entrypoint
-ncdf
+filesystem
+netcdf

@@ -5,6 +5,8 @@
 #' @param target_variables vector of valid variables being predicted
 #' @param reps_col name of the replicates column (for ensemble forecasts)
 #' @param quiet logical, default TRUE (show download progress?)
+#' @param s3 Optionally, provide an S3 bucket (from `arrow::s3_bucket`).
+#' In this case, `file_in` is interpreted as the object key on the bucket. 
 #' @param ... additional options (currently ignored)
 #' Reads in a valid forecast as a data.frame() in EFI format.
 #' csv files are simply read in using `readr::read_csv`.
@@ -26,8 +28,20 @@ read_forecast <- function(file_in,
                                                "amblyomma_americanum"),
                           reps_col = "ensemble",
                           quiet = TRUE,
+                          s3 = NULL,
                           ...){
 
+  if(!is.null(s3)) {
+    if(grepl("[.]nc", file_in)){ #if file is nc
+      dest <- tempfile(fileext=".nc")
+      download_file(file_in, s3, dest)
+      out <- read_forecast_nc(dest, )
+      unlink(dest)
+    } else {
+      out <- read_arrow(file_in, s3)
+    }
+  }
+  
   if(any(vapply(c("[.]csv", "[.]csv\\.gz"), grepl, logical(1), file_in))){  
     # if file is csv zip file
     out <- readr::read_csv(file_in, guess_max = 1e6, lazy = FALSE, show_col_types = FALSE) 
@@ -39,6 +53,25 @@ read_forecast <- function(file_in,
   
   out
 }
+
+read_arrow <- function(key, s3, ...) {
+  
+  requireNamespace("arrow", quietly = TRUE)
+  if (grepl("\\.csv\\.gz$", key)) {
+    obj <- arrow::CompressedInputStream$create(s3$OpenInputStream(key))
+    out <- arrow::read_csv_arrow(obj, ...)
+  } else if (grepl("\\.csv$", key)) {
+    obj <- s3$path(key)
+    out <- arrow::read_csv_arrow(obj, ...) 
+  } else if (grepl("\\.parquet$", key)) {
+    obj <- s3$path(key)
+    out <- arrow::read_parquet(obj) 
+  } else {
+    stop("file format not recognized")
+  }
+  out
+}
+
 
 #GENERALIZATION: Specific target variables
 read_forecast_nc <- function(file_in,
@@ -56,6 +89,11 @@ read_forecast_nc <- function(file_in,
                              reps_col = "ensemble",
                              quiet = TRUE)
 {
+  
+  requireNamespace("dplyr", quietly = TRUE)
+  requireNamespace("ncdf4", quietly = TRUE)
+  requireNamespace("lubridate", quietly = TRUE)
+  
   
   if(!file.exists(file_in)) {
     ## If URL is passed instead
@@ -89,7 +127,7 @@ read_forecast_nc <- function(file_in,
   }
   }
     
-  time_tibble <- tibble::tibble(time = unique(df$time),
+  time_tibble <- dplyr::tibble(time = unique(df$time),
                                 new_value = time_nc)
   
   df <- df %>% 
@@ -107,7 +145,7 @@ read_forecast_nc <- function(file_in,
     }
     ncdf4::nc_close(nc)
     
-    site_tibble  <- tibble::tibble(site = unique(df$site),
+    site_tibble  <- dplyr::tibble(site = unique(df$site),
                                    new_value = as.vector(siteID))
     df <- df %>% 
       dplyr::left_join(site_tibble, by = "site") %>% 
@@ -120,7 +158,7 @@ read_forecast_nc <- function(file_in,
     depth <- ncdf4::ncvar_get(nc, "depth")
     ncdf4::nc_close(nc)
     
-    depth_tibble  <- tibble::tibble(depth = unique(df$depth),
+    depth_tibble  <- dplyr::tibble(depth = unique(df$depth),
                                    new_value = as.vector(depth)) 
     df <- df %>% 
       dplyr::left_join(depth_tibble, by = "depth") %>% 
