@@ -1,6 +1,6 @@
 
 test_that("ncdf by URL", {
-  
+  skip_on_os("windows")
   fc <- 
     paste0("https://data.ecoforecast.org/forecasts/",
            "terrestrial_30min/terrestrial_30min-2022-01-01-hist30min.nc")
