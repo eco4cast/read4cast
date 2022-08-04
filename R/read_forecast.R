@@ -137,17 +137,21 @@ read_forecast_nc <- function(file_in,
     nc <- ncdf4::nc_open(file_in)
     #GENERALIZATION:  Hack because ticks didn't make siteID unique in Round 1
     if(("ixodes_scapularis" %in% nc$var | "amblyomma_americanum" %in% nc$var) & "plotID" %in% nc$var){
-      siteID <- ncdf4::ncvar_get(nc, "plotID")
+      site_id <- ncdf4::ncvar_get(nc, "plotID")
     }else{
-      siteID <- ncdf4::ncvar_get(nc, "siteID")  
+      if("siteID" %in% nc$var){
+        site_id <- ncdf4::ncvar_get(nc, "siteID")  
+       }else{
+        site_id <- ncdf4::ncvar_get(nc, "site_id")
+       }
     }
     ncdf4::nc_close(nc)
     
-    site_tibble  <- dplyr::tibble(site = unique(df$site),
+    site_tibble  <- dplyr::tibble(site_id = unique(df$site),
                                    new_value = as.vector(siteID))
     df <- df %>% 
-      dplyr::left_join(site_tibble, by = "site") %>% 
-      dplyr::mutate(site = new_value) %>% 
+      dplyr::left_join(site_tibble, by = "site_id") %>% 
+      dplyr::mutate(site_id = new_value) %>% 
       dplyr::select(-new_value) 
   }
   
@@ -165,7 +169,7 @@ read_forecast_nc <- function(file_in,
   }
   
   out <- df %>% 
-    dplyr::select(dplyr::any_of(c("time", "site","depth","ensemble", 
+    dplyr::select(dplyr::any_of(c("time", "site_id","depth","ensemble", 
                            "forecast","data_assimilation", targets)))
   
   out
