@@ -148,7 +148,7 @@ read_forecast_nc <- function(file_in,
     ncdf4::nc_close(nc)
     
     site_tibble  <- dplyr::tibble(site_id = unique(df$site),
-                                   new_value = as.vector(siteID))
+                                   new_value = as.vector(site_id))
     df <- df %>% 
       dplyr::left_join(site_tibble, by = "site_id") %>% 
       dplyr::mutate(site_id = new_value) %>% 
