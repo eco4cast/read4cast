@@ -30,7 +30,7 @@ read_forecast <- function(file_in,
                           quiet = TRUE,
                           s3 = NULL,
                           ...){
-
+  
   if(!is.null(s3)) {
     if(grepl("[.]nc", file_in)){ #if file is nc
       dest <- tempfile(fileext=".nc")
@@ -43,7 +43,7 @@ read_forecast <- function(file_in,
   } else if(any(vapply(c("[.]csv", "[.]csv\\.gz"), grepl, logical(1), file_in))){  
     # if file is csv zip file
     out <- readr::read_csv(file_in, guess_max = 1e6, lazy = FALSE, show_col_types = FALSE) 
-
+    
     
   } else if(grepl("[.]nc", file_in)){ #if file is nc
     out <- read_forecast_nc(file_in, target_variables, reps_col, quiet = quiet)
@@ -118,15 +118,15 @@ read_forecast_nc <- function(file_in,
   df <- nc_tidy %>% tidync::hyper_tibble(select_var = targets[1])
   
   if(length(targets) > 1){
-  for(i in 2:length(targets)){
-    new_df <- nc_tidy %>% tidync::hyper_tibble(select_var = targets[i]) %>% 
-      dplyr::select(targets[i]) 
-    df <- dplyr::bind_cols(df, new_df)
+    for(i in 2:length(targets)){
+      new_df <- nc_tidy %>% tidync::hyper_tibble(select_var = targets[i]) %>% 
+        dplyr::select(targets[i]) 
+      df <- dplyr::bind_cols(df, new_df)
+    }
   }
-  }
-    
+  
   time_tibble <- dplyr::tibble(time = unique(df$time),
-                                new_value = time_nc)
+                               new_value = time_nc)
   
   df <- df %>% 
     dplyr::left_join(time_tibble, by = "time") %>% 
@@ -141,17 +141,17 @@ read_forecast_nc <- function(file_in,
     }else{
       if("siteID" %in% nc$var){
         site_id <- ncdf4::ncvar_get(nc, "siteID")  
-       }else{
+      }else{
         site_id <- ncdf4::ncvar_get(nc, "site_id")
-       }
+      }
     }
     ncdf4::nc_close(nc)
     
-    site_tibble  <- dplyr::tibble(site_id = unique(df$site_id),
-                                   new_value = as.vector(site_id))
+    site_tibble  <- dplyr::tibble(site = unique(df$site),
+                                  new_value = as.vector(site_id))
     df <- df %>% 
-      dplyr::left_join(site_tibble, by = "site_id") %>% 
-      dplyr::mutate(site_id = new_value) %>% 
+      dplyr::left_join(site_tibble, by = "site") %>% 
+      dplyr::mutate(site = new_value) %>% 
       dplyr::select(-new_value) 
   }
   
@@ -168,9 +168,13 @@ read_forecast_nc <- function(file_in,
       dplyr::select(-new_value)
   }
   
+  df <- df %>% 
+    rename(site_id = site) %>% 
+    pivot_longer(dplyr::any_of(targets), names_to = "variable", values_to = "predicted")
+  
   out <- df %>% 
     dplyr::select(dplyr::any_of(c("time", "site_id","depth","ensemble", 
-                           "forecast","data_assimilation", targets)))
+                                  "forecast","data_assimilation", "variable", "predicted")))
   
   out
   
