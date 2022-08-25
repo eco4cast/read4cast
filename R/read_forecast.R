@@ -177,7 +177,7 @@ read_forecast_nc <- function(file_in,
   
   df <- df %>% 
     dplyr::rename(site_id = site) %>% 
-    dplyr::pivot_longer(dplyr::any_of(targets), names_to = "variable", values_to = "predicted")
+    tidyr::pivot_longer(dplyr::any_of(targets), names_to = "variable", values_to = "predicted")
   
   if("start_time" %in% names(global_attributes)){
     df <- df %>% 
