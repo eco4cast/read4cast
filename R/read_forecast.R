@@ -176,12 +176,12 @@ read_forecast_nc <- function(file_in,
   }
   
   df <- df %>% 
-    rename(site_id = site) %>% 
-    pivot_longer(dplyr::any_of(targets), names_to = "variable", values_to = "predicted")
+    dplyr::rename(site_id = site) %>% 
+    dplyr::pivot_longer(dplyr::any_of(targets), names_to = "variable", values_to = "predicted")
   
   if("start_time" %in% names(global_attributes)){
     df <- df %>% 
-      mutate(start_time = start_time)
+      dplyr::mutate(start_time = start_time)
   }
   
   out <- df %>% 
