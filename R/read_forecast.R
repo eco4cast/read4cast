@@ -104,14 +104,21 @@ read_forecast_nc <- function(file_in,
   nc <- ncdf4::nc_open(file_in)
   time_nc <- as.integer(ncdf4::ncvar_get(nc, "time"))
   t_string <- strsplit(ncdf4::ncatt_get(nc, varid = "time", "units")$value, " ")[[1]]
+  global_attributes <- ncdf4::ncatt_get(nc, varid = 0)
+  if("start_time" %in% names(global_attributes)){
+    start_time <- global_attributes$start_time
+  }
   if(t_string[1] == "days"){
     tustr<-strsplit(ncdf4::ncatt_get(nc, varid = "time", "units")$value, " ")
     time_nc <-lubridate::as_date(time_nc,origin=unlist(tustr)[3])
+    start_time <- lubridate::as_date(start_time)
   }else{
     tustr <- lubridate::as_datetime(strsplit(ncdf4::ncatt_get(nc, varid = "time", "units")$value, " ")[[1]][3])
     time_nc <- as.POSIXct.numeric(time_nc, origin = tustr)
+    start_time <- lubridate::as_datetime(start_time)
   } 
   targets <- names(nc$var)[which(names(nc$var) %in% target_variables)]
+  
   ncdf4::nc_close(nc)
   
   nc_tidy <- tidync::tidync(file_in)
@@ -172,8 +179,13 @@ read_forecast_nc <- function(file_in,
     rename(site_id = site) %>% 
     pivot_longer(dplyr::any_of(targets), names_to = "variable", values_to = "predicted")
   
+  if("start_time" %in% names(global_attributes)){
+    df <- df %>% 
+      mutate(start_time = start_time)
+  }
+  
   out <- df %>% 
-    dplyr::select(dplyr::any_of(c("time", "site_id","depth","ensemble", 
+    dplyr::select(dplyr::any_of(c("time", "start_time", "site_id","depth","ensemble", 
                                   "forecast","data_assimilation", "variable", "predicted")))
   
   out
