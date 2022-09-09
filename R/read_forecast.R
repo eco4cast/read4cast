@@ -102,20 +102,38 @@ read_forecast_nc <- function(file_in,
   }
   
   nc <- ncdf4::nc_open(file_in)
-  time_nc <- as.integer(ncdf4::ncvar_get(nc, "time"))
-  t_string <- strsplit(ncdf4::ncatt_get(nc, varid = "time", "units")$value, " ")[[1]]
+  if("time" %in% names(nc$dim)){
+    time_nc <- as.integer(ncdf4::ncvar_get(nc, "time"))
+    t_string <- strsplit(ncdf4::ncatt_get(nc, varid = "time", "units")$value, " ")[[1]]
+    tustr<-strsplit(ncdf4::ncatt_get(nc, varid = "time", "units")$value, " ")
+  }else{
+    time_nc <- as.integer(ncdf4::ncvar_get(nc, "datetime"))
+    t_string <- strsplit(ncdf4::ncatt_get(nc, varid = "datetime", "units")$value, " ")[[1]] 
+    tustr<-strsplit(ncdf4::ncatt_get(nc, varid = "datetime", "units")$value, " ")
+  }
   global_attributes <- ncdf4::ncatt_get(nc, varid = 0)
   if("start_time" %in% names(global_attributes)){
-    start_time <- global_attributes$start_time
+    reference_datetime <- global_attributes$start_time
+  }else if("reference_datetime" %in% names(global_attributes)){
+    reference_datetime <- global_attributes$reference_datetime
+  }else{
+    reference_datetime <- NULL
   }
   if(t_string[1] == "days"){
-    tustr<-strsplit(ncdf4::ncatt_get(nc, varid = "time", "units")$value, " ")
     time_nc <-lubridate::as_date(time_nc,origin=unlist(tustr)[3])
-    start_time <- lubridate::as_date(start_time)
+    if(is.null(reference_datetime)){
+      reference_datetime <- lubridate::as_date(time_nc[1])
+    }else{
+      reference_datetime <- lubridate::as_date(reference_datetime)
+    }
   }else{
-    tustr <- lubridate::as_datetime(strsplit(ncdf4::ncatt_get(nc, varid = "time", "units")$value, " ")[[1]][3])
+    tustr <- lubridate::as_datetime(tustr[[1]][3])
     time_nc <- as.POSIXct.numeric(time_nc, origin = tustr)
-    start_time <- lubridate::as_datetime(start_time)
+    if(is.null(reference_datetime)){
+      reference_datetime <- lubridate::as_datetime(time_nc[1])
+    }else{
+      reference_datetime <- lubridate::as_datetime(reference_datetime)
+    }
   } 
   targets <- names(nc$var)[which(names(nc$var) %in% target_variables)]
   
@@ -123,6 +141,11 @@ read_forecast_nc <- function(file_in,
   
   nc_tidy <- tidync::tidync(file_in)
   df <- nc_tidy %>% tidync::hyper_tibble(select_var = targets[1])
+  
+  if("time" %in% names(df)){
+    df <- df %>%
+      rename(time = datetime)
+  }
   
   if(length(targets) > 1){
     for(i in 2:length(targets)){
@@ -132,12 +155,12 @@ read_forecast_nc <- function(file_in,
     }
   }
   
-  time_tibble <- dplyr::tibble(time = unique(df$time),
+  time_tibble <- dplyr::tibble(datetime = unique(df$datetime),
                                new_value = time_nc)
   
   df <- df %>% 
-    dplyr::left_join(time_tibble, by = "time") %>% 
-    dplyr::mutate(time = new_value) %>% 
+    dplyr::left_join(time_tibble, by = "datetime") %>% 
+    dplyr::mutate(datetime = new_value) %>% 
     dplyr::select(-new_value)
   
   if("site" %in% names(df)){
@@ -181,15 +204,22 @@ read_forecast_nc <- function(file_in,
   
   if("start_time" %in% names(global_attributes)){
     df <- df %>% 
-      dplyr::mutate(start_time = start_time)
+      dplyr::mutate(reference_datetime = start_time)
+  }else  if("reference_datetime" %in% names(global_attributes)){
+    df <- df %>% 
+      dplyr::mutate(reference_datetime = reference_datetime)
+  }
+  
+  if(!("family" %in% nc$dim)){
+    df <- df |> 
+      mutate(family = "ensemble")
   }
   
   out <- df %>% 
-    dplyr::select(dplyr::any_of(c("time", "start_time", "site_id","depth","ensemble", 
+    dplyr::select(dplyr::any_of(c("datetime", "reference_datetime", "site_id","depth","ensemble","family", "parameter", 
                                   "forecast","data_assimilation", "variable", "predicted")))
   
   out
-  
 }
 
 utils::globalVariables("new_value", package="read4cast")
