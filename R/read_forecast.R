@@ -200,7 +200,7 @@ read_forecast_nc <- function(file_in,
   
   df <- df %>% 
     dplyr::rename(site_id = site) %>% 
-    tidyr::pivot_longer(dplyr::any_of(targets), names_to = "variable", values_to = "predicted")
+    tidyr::pivot_longer(dplyr::any_of(targets), names_to = "variable", values_to = "prediction")
   
   if("start_time" %in% names(global_attributes)){
     df <- df %>% 
@@ -217,7 +217,7 @@ read_forecast_nc <- function(file_in,
   
   out <- df %>% 
     dplyr::select(dplyr::any_of(c("datetime", "reference_datetime", "site_id","depth","ensemble","family", "parameter", 
-                                  "forecast","data_assimilation", "variable", "predicted")))
+                                  "forecast","data_assimilation", "variable", "prediction")))
   
   out
 }
